@@ -13,4 +13,5 @@ def auth_user(username, password):
 
 
 if __name__ == "__main__":
+    print("Test")
     print(auth_user("user", "123"))
