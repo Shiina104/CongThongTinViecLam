@@ -2,7 +2,7 @@ import json
 
 
 def auth_user(username, password):
-    with open("../data/users.json", encoding='utf-8') as f:
+    with open("./CongTinViecLam/data/users.json", encoding='utf-8') as f:
         users = json.load(f)
 
         for u in users:
