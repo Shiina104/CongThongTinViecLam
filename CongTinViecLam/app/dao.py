@@ -1,15 +1,41 @@
 import json
+from app import db, app
+from app.models import User, Candidate, Employer
 
 
 def auth_user(username, password):
-    with open("./app/data/users.json", encoding='utf-8') as f:
-        users = json.load(f)
+    user = User.query.filter_by(username=username).first()
+    if user and user.check_password(password) and user.is_active:
+        return user
+    return None
 
-        for u in users:
-            if u['username'] == username and u['password'] == password:
-                return True
+def register_user(username, password, role, **kwargs):
+    user = User(username=username, role=role)
+    user.set_password(password)
 
-    return False
+    db.session.add(user)
+    db.session.commit()
+
+    if role == "candidate":
+        candidate = Candidate(
+            user_id=user.id,
+            full_name=kwargs.get('full_name', ''),
+            email=kwargs.get('email', ''),
+            phone=kwargs.get('phone', ''),
+            address=kwargs.get('address', '')
+        )
+        db.session.add(candidate)
+    elif role == "employer":
+        employer = Employer(
+            user_id=user.id,
+            company_name=kwargs.get('company_name', ''),
+            company_address=kwargs.get('company_address', ''),
+            contact_name=kwargs.get('contact_name', '')
+        )
+        db.session.add(employer)
+
+    db.session.commit()
+    return user
 
 
 if __name__ == "__main__":

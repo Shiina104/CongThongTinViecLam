@@ -1,9 +1,15 @@
 from werkzeug.security import generate_password_hash, check_password_hash
-
 from app import db, app
 from sqlalchemy import Column, Integer, String
 from flask_login import UserMixin
 from datetime import datetime
+from enum import Enum
+
+
+class UserRole(Enum):
+    CANDIDATE = 'candidate'
+    EMPLOYER = 'employer'
+    ADMIN = 'admin'
 
 
 class User(UserMixin, db.Model):
@@ -12,7 +18,7 @@ class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(64), unique=True, nullable=False)
     password = db.Column(db.String(64), nullable=False)
-    role = db.Column(db.Enum('candidate', 'employer', 'admin'), nullable=False)
+    role = db.Column(db.Enum(UserRole), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, nullable=False, default=True)
 
