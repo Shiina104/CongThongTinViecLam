@@ -1,6 +1,6 @@
 import unittest
 
-from CongTinViecLam import dao
+from app import dao
 
 
 class TestLogin(unittest.TestCase):
