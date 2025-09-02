@@ -1,6 +1,6 @@
 import json
 from app import db, app
-from app.models import User, Candidate, Employer
+from app.models import User, Candidate, Employer, UserRole
 
 
 def auth_user(username, password):
@@ -16,7 +16,7 @@ def register_user(username, password, role, **kwargs):
     db.session.add(user)
     db.session.commit()
 
-    if role == "candidate":
+    if role == UserRole.CANDIDATE:
         candidate = Candidate(
             user_id=user.id,
             full_name=kwargs.get('full_name', ''),
@@ -25,12 +25,12 @@ def register_user(username, password, role, **kwargs):
             address=kwargs.get('address', '')
         )
         db.session.add(candidate)
-    elif role == "employer":
+    elif role == UserRole.EMPLOYER:
         employer = Employer(
             user_id=user.id,
             company_name=kwargs.get('company_name', ''),
             company_address=kwargs.get('company_address', ''),
-            contact_name=kwargs.get('contact_name', '')
+            contact_person=kwargs.get('contact_person', '')
         )
         db.session.add(employer)
 
