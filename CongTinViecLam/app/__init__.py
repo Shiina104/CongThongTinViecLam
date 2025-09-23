@@ -15,7 +15,7 @@ db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-csrf = CSRFProtect(app)
+# csrf = CSRFProtect(app)
 
 def create_db():
     with app.app_context():

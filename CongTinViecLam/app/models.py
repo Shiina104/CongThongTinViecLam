@@ -66,6 +66,7 @@ class CV(db.Model):
     __tablename__ = 'cvs'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+    candidate_id = db.Column(db.Integer, db.ForeignKey('candidates.id'), nullable=False)
     title = Column(String(100), nullable=False)
     skills = Column(String(255), nullable=True)
     experience =Column(String(255), nullable=True)

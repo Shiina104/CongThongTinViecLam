@@ -1,3 +1,4 @@
+import flask
 from flask import render_template, redirect, session, url_for, flash
 from flask_login import current_user, login_user, login_required, logout_user
 
@@ -15,6 +16,50 @@ def load_user(user_id):
 def index():
     # recent_jobs = Job.query.filter_by(status='active').order_by(Job.created_at.desc()).limit(10).all()
     return render_template("index.html")
+
+
+@app.route('/job')
+def jobs():
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+
+    keyword = request.args.get('keyword', '')
+    location = request.args.get('location', '')
+
+    query = Job.query.filter_by(status='active')
+
+    if keyword:
+        query = query.filter(Job.title.ilike(f'%{keyword}%'))
+    if location:
+        query = query.filter(Job.location.ilike(f'%{location}%'))
+
+    jobs = query.order_by(Job.posted_date.desc()).paginate(page=page, per_page=per_page)
+
+    return render_template('job.html', jobs=jobs)
+
+
+@app.route('/job/<int:job_id>')
+def job_detail(job_id):
+    try:
+        job = Job.query.get_or_404(job_id)
+
+        if job.status != 'active':
+            flash('Công việc này không còn tuyển dụng', 'warning')
+            return redirect(url_for('danh_sach_viec_lam'))
+
+        applied = False
+
+        if current_user.is_authenticated and current_user.role == UserRole.CANDIDATE:
+            applied = Application.query.filter_by(
+                job_id=job_id,
+                candidate_id=current_user.candidate.id
+            ).first() is not None
+
+        return render_template('job_detail.html', job=job, applied=applied)
+
+    except Exception as e:
+        flash('Có lỗi xảy ra khi tải thông tin công việc', 'error')
+        return redirect(url_for('job'))
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -110,6 +155,45 @@ def register_employer():
             return redirect(url_for('employer_dashboard'))
 
     return render_template('register_employer.html')
+
+
+# ỨNG VIÊN DASHBOARD
+@app.route("/candidate/dashboard")
+@login_required
+def candidate_dashboard():
+    if current_user.role != UserRole.CANDIDATE:
+        flash('Bạn không có quyền truy cập trang này', 'danger')
+        return redirect(url_for('index'))
+
+    applications = Application.query.filter_by(candidate_id=current_user.candidate.id).order_by(Application.applied_date.desc()).all()
+    cvs = CV.query.filter_by(candidate_id=current_user.candidate.id).all()
+
+    return render_template('candidate_dashboard.html', applications=applications, cvs=cvs)
+
+
+# ỨNG VIÊN TẠO CV
+@app.route("/candidate/create_cv", methods=["GET", "POST"])
+@login_required
+def create_cv():
+    if current_user.role != UserRole.CANDIDATE:
+        flash('Bạn không có quyền truy cập trang này', 'danger')
+        return redirect(url_for('index'))
+
+    if request.method == "POST":
+        title = request.form.get("title")
+        skills = request.form.get("skills")
+        experience = request.form.get("experience")
+        education = request.form.get("education")
+
+        cv = CV(candidate_id=current_user.candidate.id, title=title, skills=skills, experience=experience)
+
+        db.session.add(cv)
+        db.session.commit()
+
+        flash('Tạo CV thành công!', 'success')
+        return redirect(url_for('candidate_dashboard'))
+
+    return render_template('create_cv.html')
 
 
 # ỨNG VIÊN NỘP HỒ SƠ
