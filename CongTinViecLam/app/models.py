@@ -12,6 +12,12 @@ class UserRole(Enum):
     ADMIN = 'admin'
 
 
+class JobStatus(Enum):
+    active = 'active'
+    inactive = 'inactive'
+    pending = 'pending'
+
+
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
 
@@ -46,7 +52,6 @@ class Candidate(db.Model):
     email = db.Column(db.String(255), nullable=True)
     address = db.Column(db.Text, nullable=True)
 
-    cvs = db.relationship('CV', backref='candidate', lazy=True)
     applications = db.relationship('Application', backref='candidate', lazy=True)
 
 
@@ -68,11 +73,21 @@ class CV(db.Model):
     id = Column(Integer, primary_key=True, autoincrement=True)
     candidate_id = db.Column(db.Integer, db.ForeignKey('candidates.id'), nullable=False)
     title = Column(String(100), nullable=False)
-    skills = Column(String(255), nullable=True)
-    experience =Column(String(255), nullable=True)
-    education = Column(String(255), nullable=True)
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    position = db.Column(db.String(255))
 
+    full_name = db.Column(db.String(255))
+    email = db.Column(db.String(255))
+    phone = db.Column(db.String(20))
+
+    objective = db.Column(db.Text)
+    skills = Column(String(255), nullable=True)
+    experience = db.Column(db.Text)  # Format: company|position|period|description|||...
+    education = db.Column(db.Text)  # Format: school|degree|period|description|||...
+
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    candidate = db.relationship('Candidate', backref='cvs', lazy=True)
     applications = db.relationship('Application', backref='cv', lazy=True)
 
 
@@ -87,7 +102,7 @@ class Job(db.Model):
     location = db.Column(db.String(255))
     salary = db.Column(db.Numeric(10, 2))
     posted_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    status = db.Column(db.Enum('active', 'inactive', 'pending'), default='pending')
+    status = db.Column(db.Enum(JobStatus), default='pending')
 
     applications = db.relationship('Application', backref='job', lazy=True)
 
@@ -110,3 +125,10 @@ class Application(db.Model):
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
+
+        import hashlib
+
+        u = User(username='admin', password=str(hashlib.md5('123456'.encode('utf-8')).hexdigest()),
+                 role=UserRole.ADMIN)
+        db.session.add(u)
+        db.session.commit()

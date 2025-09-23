@@ -1,9 +1,101 @@
-{% extends 'layout/base.html' %}
-
-{% block title %}Trang Chủ{% endblock %}
+{% extends "layout/base.html" %}
 
 {% block content %}
+<div class="hero-section bg-light py-5 mb-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold text-primary">Tìm Công Việc Mơ Ước</h1>
+                <p class="lead">Kết nối hàng ngàn nhà tuyển dụng và ứng viên chất lượng</p>
+                <div class="d-flex gap-3 mt-4">
+                    <a href="{{ url_for('jobs') }}" class="btn btn-primary btn-lg">Tìm Việc Ngay</a>
+                    {% if not current_user.is_authenticated %}
+                    <a href="{{ url_for('register_employer') }}" class="btn btn-outline-primary btn-lg">Đăng Tin Tuyển Dụng</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
+<div class="container">
+    <div class="row mb-5">
+        <div class="col-12 text-center">
+            <h2 class="fw-bold">Công Việc Mới Nhất</h2>
+            <p class="text-muted">Khám phá những cơ hội việc làm hấp dẫn</p>
+        </div>
+    </div>
 
+    <div class="row" id="recent-jobs">
+        {% if not recent_jobs %}
+        <div class="col-12 text-center"><p>Chưa có công việc nào</p></div>
+        {% else %}
+            {% for job in recent_jobs %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ job.title }}</h5>
+                        <p class="card-text text-muted">{{ job.company }}</p>
+                        <p class="card-text">
+                            <small class="text-muted">
+                                <i class="bi bi-geo-alt"></i> {{ job.location }}
+                                {% if job.salary %}
+                                    | <i class="bi bi-currency-dollar"></i> {{ "{:,.0f}".format(job.salary) }} VND
+                                {% endif %}
+                            </small>
+                        </p>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a href="/job/{{ job.id }}" class="btn btn-primary btn-sm">Xem Chi Tiết</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
 
+    <div class="row mt-5">
+        <div class="col-12 text-center">
+            <a href="{{ url_for('jobs') }}" class="btn btn-outline-primary">Xem Tất Cả Công Việc</a>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load recent jobs via API
+// fetch('/api/jobs?limit=6')
+//     .then(response => response.json())
+//     .then(jobs => {
+//         const container = document.getElementById('recent-jobs');
+//         if (jobs.length === 0) {
+//             container.innerHTML = '<div class="col-12 text-center"><p>Chưa có công việc nào</p></div>';
+//             return;
+//         }
+//
+//         container.innerHTML = jobs.map(job => `
+//             <div class="col-lg-4 col-md-6 mb-4">
+//                 <div class="card h-100 shadow-sm">
+//                     <div class="card-body">
+//                         <h5 class="card-title">${job.title}</h5>
+//                         <p class="card-text text-muted">${job.company}</p>
+//                         <p class="card-text">
+//                             <small class="text-muted">
+//                                 <i class="bi bi-geo-alt"></i> ${job.location}
+//                                 ${job.salary ? `| <i class="bi bi-currency-dollar"></i> ${job.salary.toLocaleString()} VND` : ''}
+//                             </small>
+//                         </p>
+//                     </div>
+//                     <div class="card-footer bg-transparent">
+//                         <a href="/job/${job.id}" class="btn btn-primary btn-sm">Xem Chi Tiết</a>
+//                     </div>
+//                 </div>
+//             </div>
+//         `).join('');
+//     })
+//     .catch(error => {
+//         console.error('Error loading jobs:', error);
+//         document.getElementById('recent-jobs').innerHTML =
+//             '<div class="col-12 text-center"><p>Lỗi khi tải danh sách công việc</p></div>';
+//     });
+</script>
 {% endblock %}

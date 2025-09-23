@@ -1,10 +1,162 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "layout/base.html" %}
 
-</body>
-</html>
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body">
+                <h1 class="h2 fw-bold">{{ job.title }}</h1>
+                <h4 class="text-primary">{{ job.employer.company_name }}</h4>
+                
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <p><strong>Địa điểm:</strong> {{ job.location }}</p>
+                        {% if job.salary %}
+                        <p><strong>Mức lương:</strong> {{ "{:,.0f}".format(job.salary) }} VND</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Ngày đăng:</strong> {{ job.posted_date.strftime('%d/%m/%Y') }}</p>
+                        <p><strong>Trạng thái:</strong> 
+                            <span class="badge bg-{{ 'success' if job.status == JobStatus.active else 'secondary' }}">
+                                {{ 'Đang tuyển' if job.status == JobStatus.active else 'Đã đóng' }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+
+                <hr>
+
+                <h5>Mô tả công việc</h5>
+                <div class="mb-4">
+                    {{ job.description|replace('\n', '<br>')|safe }}
+                </div>
+
+                {% if job.requirements %}
+                <h5>Yêu cầu công việc</h5>
+                <div class="mb-4">
+                    {{ job.requirements|replace('\n', '<br>')|safe }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm sticky-top" style="top: 100px;">
+            <div class="card-body text-center">
+                {% if current_user.is_authenticated %}
+                    {% if current_user.role.value == 'candidate' %}
+                        {% if applied %}
+                            <button class="btn btn-secondary w-100 mb-2" disabled>Đã ứng tuyển</button>
+                            <small class="text-success">✓ Bạn đã ứng tuyển công việc này</small>
+                        {% else %}
+                            <button class="btn btn-primary w-100 mb-2" onclick="showApplyModal()">Ứng tuyển ngay</button>
+                            <small>Nộp hồ sơ của bạn cho vị trí này</small>
+                        {% endif %}
+                    {% elif current_user.role.value == 'employer' %}
+                        <button class="btn btn-outline-primary w-100" disabled>Nhà tuyển dụng</button>
+                    {% endif %}
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-primary w-100 mb-2">Đăng nhập để ứng tuyển</a>
+                    <small>Đăng nhập để nộp hồ sơ cho công việc này</small>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card shadow-sm mt-4">
+            <div class="card-body">
+                <h6>Thông tin nhà tuyển dụng</h6>
+                <p class="mb-1"><strong>Công ty:</strong> {{ job.employer.company_name }}</p>
+                {% if job.employer.company_address %}
+                <p class="mb-1"><strong>Địa chỉ:</strong> {{ job.employer.company_address }}</p>
+                {% endif %}
+                {% if job.employer.contact_person %}
+                <p class="mb-0"><strong>Người liên hệ:</strong> {{ job.employer.contact_person }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Apply Modal -->
+<div class="modal fade" id="applyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ứng tuyển: {{ job.title }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="applyForm">
+                    <div class="mb-3">
+                        <label class="form-label">Chọn CV để ứng tuyển:</label>
+                        <select class="form-select" id="cvSelect" required>
+                            <option value="">-- Chọn CV --</option>
+                            <!-- CVs will be loaded via JavaScript -->
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" onclick="submitApplication()">Gửi đơn ứng tuyển</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+function showApplyModal() {
+    // Load candidate's CVs
+    fetch('/api/candidate/cvs')
+        .then(response => response.json())
+        .then(cvs => {
+            const select = document.getElementById('cvSelect');
+            select.innerHTML = '<option value="">-- Chọn CV --</option>' +
+                cvs.map(cv => `<option value="${cv.id}">${cv.title}</option>`).join('');
+            
+            if (cvs.length === 0) {
+                select.innerHTML = '<option value="">Bạn chưa có CV nào. Vui lòng tạo CV trước.</option>';
+                select.disabled = true;
+            }
+            
+            new bootstrap.Modal(document.getElementById('applyModal')).show();
+        });
+}
+
+function submitApplication() {
+    const cvId = document.getElementById('cvSelect').value;
+    if (!cvId) {
+        alert('Vui lòng chọn CV để ứng tuyển');
+        return;
+    }
+
+    fetch('/api/apply', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            job_id: {{ job.id }},
+            cv_id: cvId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Lỗi: ' + data.error);
+        } else {
+            alert('Ứng tuyển thành công!');
+            location.reload();
+        }
+    })
+    .catch(error => {
+        alert('Có lỗi xảy ra khi ứng tuyển');
+        console.error('Error:', error);
+    });
+}
+</script>
+{% endblock %}
+{% endblock %}

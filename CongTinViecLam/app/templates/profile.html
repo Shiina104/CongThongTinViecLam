@@ -1,0 +1,108 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-file-earmark-person"></i>
+                    Profile
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="profileForm" action="{{ url_for('profile')}}">
+                    <!-- Thông tin -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="border-bottom pb-2">Thông tin của bạn</h5>
+                        </div>
+                        {% if current_user.role == UserRole.CANDIDATE %}
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="full_name" class="form-label">Họ và tên *</label>
+                                <input type="text" class="form-control" id="full_name" name="full_name"
+                                       value="{{ current_user.candidate.full_name if current_user.candidate }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email *</label>
+                                <input type="email" class="form-control" id="email" name="email"
+                                       value="{{ current_user.candidate.email if current_user.candidate }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Số điện thoại</label>
+                                <input type="tel" class="form-control" id="phone" name="phone"
+                                       value="{{ current_user.candidate.phone if current_user.candidate }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="address" class="form-label">Địa chỉ</label>
+                                <input type="text" class="form-control" id="address" name="address"
+                                       value="{{ current_user.candidate.address if current_user.candidate }}">
+                            </div>
+                        </div>
+                        {% elif current_user.role == UserRole.EMPLOYER %}
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="company_name" class="form-label">Tên công ty *</label>
+                                <input type="text" class="form-control" id="company_name" name="company_name"
+                                       value="{{ current_user.employer.company_name if current_user.employer }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="company_address" class="form-label">Địa chỉ công ty</label>
+                                <input type="text" class="form-control" id="company_address" name="company_address"
+                                       value="{{ current_user.employer.company_address if current_user.employer }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="contact_person" class="form-label">Người liên hệ</label>
+                                <input type="text" class="form-control" id="contact_person" name="contact_person"
+                                       value="{{ current_user.employer.contact_person if current_user.employer }}">
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+
+
+                    <!-- Nút submit -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary me-md-2">Hủy bỏ</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i>
+                            Cập nhật
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+// Auto-save draft
+let autoSaveTimer;
+function autoSave() {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => {
+        const formData = new FormData(document.getElementById('profileForm'));
+        // Gửi request auto-save (có thể implement sau)
+        console.log('Auto-saving...', Object.fromEntries(formData));
+    }, 2000);
+}
+
+// Gắn sự kiện auto-save
+document.querySelectorAll('#profileForm input, #profileForm textarea').forEach(element => {
+    element.addEventListener('input', autoSave);
+});
+</script>
+{% endblock %}
+{% endblock %}

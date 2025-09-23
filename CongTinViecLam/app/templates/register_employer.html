@@ -1,10 +1,62 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "layout/base.html" %}
 
-</body>
-</html>
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">Đăng Ký Nhà tuyển dụng</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('register_employer')}}">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Thông tin đăng nhập</h5>
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Tên đăng nhập *</label>
+                                <input type="text" class="form-control" id="username" name="username" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Mật khẩu *</label>
+                                <input type="password" class="form-control" id="password" name="password" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="confirm_password" class="form-label">Xác nhận mật khẩu *</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h5>Thông tin công ty</h5>
+                            <div class="mb-3">
+                                <label for="company_name" class="form-label">Tên công ty *</label>
+                                <input type="text" class="form-control" id="company_name" name="company_name" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="company_address" class="form-label">Địa chỉ công ty</label>
+                                <input type="text" class="form-control" id="company_address" name="company_address">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="contact_person" class="form-label">Người liên hệ</label>
+                                <input type="text" class="form-control" id="contact_person" name="contact_person">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-lg">Đăng Ký</button>
+                    </div>
+                </form>
+
+                <div class="text-center mt-3">
+                    <p>Đã có tài khoản? <a href="{{ url_for('login') }}">Đăng nhập ngay</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

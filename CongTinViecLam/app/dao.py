@@ -1,3 +1,4 @@
+import hashlib
 import json
 from app import db, app
 from app.models import User, Candidate, Employer, UserRole
@@ -5,13 +6,16 @@ from app.models import User, Candidate, Employer, UserRole
 
 def auth_user(username, password):
     user = User.query.filter_by(username=username).first()
-    if user and user.check_password(password) and user.is_active:
+    password = str(hashlib.md5(password.encode('utf-8')).hexdigest())
+
+    if user and user.password.__eq__(password) and user.is_active:
         return user
     return None
 
 def register_user(username, password, role, **kwargs):
-    user = User(username=username, role=role)
-    user.set_password(password)
+    password = str(hashlib.md5(password.encode('utf-8')).hexdigest())
+
+    user = User(username=username, password=password, role=role)
 
     db.session.add(user)
     db.session.commit()

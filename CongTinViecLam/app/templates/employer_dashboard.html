@@ -1,10 +1,189 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "layout/base.html" %}
 
-</body>
-</html>
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="fw-bold">Dashboard Nhà Tuyển Dụng</h1>
+                <p class="text-muted">Quản lý tin tuyển dụng và ứng viên</p>
+            </div>
+            <a href="{{ url_for('create_job') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Đăng tin mới
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Thống kê nhanh -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Tổng tin đăng</h5>
+                        <h2 class="card-text">{{ jobs|length }}</h2>
+                    </div>
+                    <i class="bi bi-briefcase display-6 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Ứng viên</h5>
+                        <h2 class="card-text">{{ total_applications }}</h2>
+                    </div>
+                    <i class="bi bi-people display-6 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Đang chờ duyệt</h5>
+                        <h2 class="card-text">{{ jobs|selectattr('status', 'equalto', 'pending')|list|length }}</h2>
+                    </div>
+                    <i class="bi bi-clock display-6 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">Đang hoạt động</h5>
+                        <h2 class="card-text">{{ jobs|selectattr('status', 'equalto', 'active')|list|length }}</h2>
+                    </div>
+                    <i class="bi bi-check-circle display-6 opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Danh sách tin tuyển dụng -->
+<div class="card shadow-sm">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">Tin tuyển dụng của bạn</h5>
+    </div>
+    <div class="card-body">
+        {% if jobs %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Tiêu đề</th>
+                        <th>Trạng thái</th>
+                        <th>Địa điểm</th>
+                        <th>Lương</th>
+                        <th>Ứng viên</th>
+                        <th>Ngày đăng</th>
+                        <th>Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in jobs %}
+                    <tr>
+                        <td>
+                            <strong>{{ job.title }}</strong>
+                            <br>
+                            <small class="text-muted">{{ job.employer.company_name }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-{{ 
+                                'success' if job.status == 'active' 
+                                else 'warning' if job.status == 'pending' 
+                                else 'secondary' 
+                            }}">
+                                {{ 
+                                    'Đang tuyển' if job.status == 'active' 
+                                    else 'Chờ duyệt' if job.status == 'pending' 
+                                    else 'Đã đóng' 
+                                }}
+                            </span>
+                        </td>
+                        <td>{{ job.location or '--' }}</td>
+                        <td>
+                            {% if job.salary %}
+                            {{ "{:,.0f}".format(job.salary) }} VND
+                            {% else %}
+                            Thương lượng
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="badge bg-primary">{{ job.applications|length }}</span>
+                        </td>
+                        <td>{{ job.posted_date.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('job_candidates', job_id=job.id) }}" 
+                                   class="btn btn-outline-primary" title="Xem ứng viên">
+                                    <i class="bi bi-people"></i>
+                                </a>
+                                <a href="/employer/job/{{ job.id }}/edit" 
+                                   class="btn btn-outline-secondary" title="Chỉnh sửa">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button class="btn btn-outline-danger" title="Xóa"
+                                        onclick="confirmDelete({{ job.id }})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-briefcase display-1 text-muted"></i>
+            <h4 class="text-muted mt-3">Chưa có tin tuyển dụng nào</h4>
+            <p class="text-muted">Bắt đầu bằng cách đăng tin tuyển dụng đầu tiên</p>
+            <a href="{{ url_for('create_job') }}" class="btn btn-primary">Đăng tin ngay</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal xác nhận xóa -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Xác nhận xóa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc muốn xóa tin tuyển dụng này? Hành động này không thể hoàn tác.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <form id="deleteForm" method="POST">
+                    <button type="submit" class="btn btn-danger">Xóa</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+function confirmDelete(jobId) {
+    const form = document.getElementById('deleteForm');
+    form.action = `/employer/job/${jobId}/delete`;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+{% endblock %}
+{% endblock %}

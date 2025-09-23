@@ -1,0 +1,479 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('employer_dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item active">Quản lý ứng viên</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="fw-bold">Ứng viên ứng tuyển</h1>
+                <h4 class="text-primary">{{ job.title }}</h4>
+                <p class="text-muted">{{ job.employer.company_name }} • {{ job.location }}</p>
+            </div>
+            <a href="{{ url_for('employer_dashboard') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Quay lại
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Thống kê ứng viên -->
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-primary">{{ applications|length }}</h5>
+                <p class="card-text">Tổng ứng viên</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-warning">{{ applications|selectattr('status', 'equalto', 'pending')|list|length }}</h5>
+                <p class="card-text">Chờ xem xét</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-info">{{ applications|selectattr('status', 'equalto', 'reviewed')|list|length }}</h5>
+                <p class="card-text">Đã xem</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-success">{{ applications|selectattr('status', 'equalto', 'accepted')|list|length }}</h5>
+                <p class="card-text">Chấp nhận</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-danger">{{ applications|selectattr('status', 'equalto', 'rejected')|list|length }}</h5>
+                <p class="card-text">Từ chối</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Danh sách ứng viên -->
+<div class="card shadow-sm">
+    <div class="card-header bg-light">
+        <div class="d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Danh sách ứng viên</h5>
+            <div class="btn-group">
+                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" 
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                    Lọc theo trạng thái
+                </button>
+                <ul class="dropdown-menu">
+                    <li><a class="dropdown-item" href="?status=all">Tất cả</a></li>
+                    <li><a class="dropdown-item" href="?status=pending">Chờ xem xét</a></li>
+                    <li><a class="dropdown-item" href="?status=reviewed">Đã xem</a></li>
+                    <li><a class="dropdown-item" href="?status=accepted">Chấp nhận</a></li>
+                    <li><a class="dropdown-item" href="?status=rejected">Từ chối</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if applications %}
+        <div class="list-group">
+            {% for app in applications %}
+            <div class="list-group-item">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ app.candidate.full_name }}</h6>
+                                <p class="mb-1 text-muted">
+                                    <i class="bi bi-envelope"></i> {{ app.candidate.email }}
+                                    {% if app.candidate.phone %}
+                                    • <i class="bi bi-phone"></i> {{ app.candidate.phone }}
+                                    {% endif %}
+                                </p>
+                                <p class="mb-0">
+                                    <small class="text-muted">
+                                        Ứng tuyển: {{ app.applied_date.strftime('%d/%m/%Y %H:%M') }}
+                                        • CV: {{ app.cv.title }}
+                                    </small>
+                                </p>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-{{ 
+                                    'warning' if app.status == 'pending' 
+                                    else 'info' if app.status == 'reviewed' 
+                                    else 'success' if app.status == 'accepted' 
+                                    else 'danger' 
+                                }}">
+                                    {{ 
+                                        'Chờ xem xét' if app.status == 'pending' 
+                                        else 'Đã xem' if app.status == 'reviewed' 
+                                        else 'Chấp nhận' if app.status == 'accepted' 
+                                        else 'Từ chối' 
+                                    }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <div class="btn-group btn-group-sm">
+                            <button type="button" class="btn btn-outline-primary" 
+                                    onclick="viewCV({{ app.cv_id }}, {{ app.id }})">
+                                <i class="bi bi-eye"></i> Xem CV
+                            </button>
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-secondary dropdown-toggle"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                    Thao tác
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li>
+                                        <a class="dropdown-item" href="#"
+                                           onclick="updateStatus({{ app.id }}, 'reviewed')">
+                                            <i class="bi bi-check-circle text-info"></i> Đánh dấu đã xem
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#"
+                                           onclick="updateStatus({{ app.id }}, 'accepted')">
+                                            <i class="bi bi-check-circle text-success"></i> Chấp nhận
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#"
+                                           onclick="updateStatus({{ app.id }}, 'rejected')">
+                                            <i class="bi bi-x-circle text-danger"></i> Từ chối
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item text-primary" href="mailto:{{ app.candidate.email }}">
+                                            <i class="bi bi-envelope"></i> Gửi email
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-people display-1 text-muted"></i>
+            <h4 class="text-muted mt-3">Chưa có ứng viên nào ứng tuyển</h4>
+            <p class="text-muted">Tin tuyển dụng của bạn sẽ xuất hiện trên trang tìm kiếm</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal xem CV -->
+<div class="modal fade" id="cvModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">CV Ứng viên</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="cvModalBody">
+                <!-- CV content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" onclick="downloadCV()">
+                    <i class="bi bi-download"></i> Tải CV
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% block scripts %}
+<script>
+// Xem CV
+function viewCV(cvId, appId) {
+    // Hiển thị loading
+    const modalBody = document.getElementById('cvModalBody');
+    modalBody.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Đang tải CV...</p>
+        </div>
+    `;
+
+    // Hiển thị modal ngay lập tức
+    const modal = new bootstrap.Modal(document.getElementById('cvModal'));
+    modal.show();
+
+    fetch(`/api/cv/${cvId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Không thể tải CV');
+            }
+            return response.json();
+        })
+        .then(cv => {
+            // Format kinh nghiệm và học vấn nếu có
+            const formatExperience = (exp) => {
+                if (!exp) return '';
+                try {
+                    // Giả sử experience được lưu dạng: company|position|period|description|||...
+                    const experiences = exp.split('|||');
+                    return experiences.map(expItem => {
+                        const parts = expItem.split('|');
+                        if (parts.length >= 3) {
+                            return `
+                                <div class="mb-2">
+                                    <strong>${parts[1]}</strong> tại <strong>${parts[0]}</strong><br>
+                                    <small class="text-muted">${parts[2]}</small>
+                                    ${parts[3] ? `<p class="mb-0">${parts[3]}</p>` : ''}
+                                </div>
+                            `;
+                        }
+                        return expItem;
+                    }).join('<hr>');
+                } catch (e) {
+                    return exp.replace(/\n/g, '<br>');
+                }
+            };
+
+            const formatEducation = (edu) => {
+                if (!edu) return '';
+                try {
+                    const educations = edu.split('|||');
+                    return educations.map(eduItem => {
+                        const parts = eduItem.split('|');
+                        if (parts.length >= 3) {
+                            return `
+                                <div class="mb-2">
+                                    <strong>${parts[1]}</strong> - <strong>${parts[0]}</strong><br>
+                                    <small class="text-muted">${parts[2]}</small>
+                                    ${parts[3] ? `<p class="mb-0">${parts[3]}</p>` : ''}
+                                </div>
+                            `;
+                        }
+                        return eduItem;
+                    }).join('<hr>');
+                } catch (e) {
+                    return edu.replace(/\n/g, '<br>');
+                }
+            };
+
+            modalBody.innerHTML = `
+                <div class="cv-content">
+                    <div class="cv-header text-center mb-4 border-bottom pb-3">
+                        <h3 class="text-primary mb-1">${cv.full_name || 'Ứng viên'}</h3>
+                        <h5 class="text-secondary">${cv.title || ''}</h5>
+                        <div class="contact-info mt-2">
+                            ${cv.email ? `<span class="me-3"><i class="bi bi-envelope"></i> ${cv.email}</span>` : ''}
+                            ${cv.phone ? `<span><i class="bi bi-phone"></i> ${cv.phone}</span>` : ''}
+                        </div>
+                    </div>
+
+                    ${cv.objective ? `
+                    <div class="cv-section mb-4">
+                        <h6 class="section-title bg-light p-2 rounded">
+                            <i class="bi bi-bullseye"></i> Mục tiêu nghề nghiệp
+                        </h6>
+                        <p class="mb-0">${cv.objective}</p>
+                    </div>
+                    ` : ''}
+
+                    ${cv.skills ? `
+                    <div class="cv-section mb-4">
+                        <h6 class="section-title bg-light p-2 rounded">
+                            <i class="bi bi-tools"></i> Kỹ năng
+                        </h6>
+                        <div class="skills-container">
+                            ${cv.skills.split('\n').map(skill =>
+                                skill.trim() ? `<span class="badge bg-primary me-1 mb-1">${skill.trim()}</span>` : ''
+                            ).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    ${cv.experience ? `
+                    <div class="cv-section mb-4">
+                        <h6 class="section-title bg-light p-2 rounded">
+                            <i class="bi bi-briefcase"></i> Kinh nghiệm làm việc
+                        </h6>
+                        <div class="experience-content">
+                            ${formatExperience(cv.experience)}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    ${cv.education ? `
+                    <div class="cv-section mb-4">
+                        <h6 class="section-title bg-light p-2 rounded">
+                            <i class="bi bi-mortarboard"></i> Học vấn
+                        </h6>
+                        <div class="education-content">
+                            ${formatEducation(cv.education)}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    ${cv.additional_info ? `
+                    <div class="cv-section mb-4">
+                        <h6 class="section-title bg-light p-2 rounded">
+                            <i class="bi bi-info-circle"></i> Thông tin bổ sung
+                        </h6>
+                        <p class="mb-0">${cv.additional_info.replace(/\n/g, '<br>')}</p>
+                    </div>
+                    ` : ''}
+
+                    <div class="cv-footer text-muted small text-center mt-4 border-top pt-3">
+                        CV được tạo ngày: ${cv.created_at}
+                    </div>
+                </div>
+            `;
+
+            // Lưu CV data để download
+            window.currentCV = cv;
+
+            // Tự động đánh dấu đã xem
+            if (appId) {
+                updateStatus(appId, 'reviewed', false);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            modalBody.innerHTML = `
+                <div class="alert alert-danger">
+                    <h6>Lỗi khi tải CV</h6>
+                    <p class="mb-0">${error.message || 'Không thể tải thông tin CV. Vui lòng thử lại.'}</p>
+                </div>
+            `;
+        });
+}
+
+// Tải CV dưới dạng PDF/Text
+function downloadCV() {
+    if (!window.currentCV) return;
+
+    const cv = window.currentCV;
+    const content = `
+CV Ứng viên
+============
+
+Họ tên: ${cv.full_name || 'N/A'}
+Tiêu đề: ${cv.title || 'N/A'}
+Email: ${cv.email || 'N/A'}
+Điện thoại: ${cv.phone || 'N/A'}
+
+${cv.objective ? `
+MỤC TIÊU NGHỀ NGHIỆP
+${cv.objective}
+` : ''}
+
+${cv.skills ? `
+KỸ NĂNG
+${cv.skills}
+` : ''}
+
+${cv.experience ? `
+KINH NGHIỆM LÀM VIỆC
+${cv.experience.replace(/\|\|\|/g, '\n\n')}
+` : ''}
+
+${cv.education ? `
+HỌC VẤN
+${cv.education.replace(/\|\|\|/g, '\n\n')}
+` : ''}
+
+${cv.additional_info ? `
+THÔNG TIN BỔ SUNG
+${cv.additional_info}
+` : ''}
+
+CV được tạo ngày: ${cv.created_at}
+    `.trim();
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `CV-${cv.full_name || 'ungvien'}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Cập nhật trạng thái ứng viên
+function updateStatus(appId, status, showAlert = true) {
+    fetch(`/api/application/${appId}/review`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: status })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (showAlert) {
+            alert(data.message);
+        }
+        // Chỉ reload nếu không phải là action "reviewed" từ viewCV
+        if (status !== 'reviewed' || showAlert) {
+            location.reload();
+        }
+    })
+    .catch(error => {
+        alert('Lỗi khi cập nhật trạng thái: ' + error.message);
+        console.error('Error:', error);
+    });
+}
+</script>
+
+<style>
+.cv-content {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+}
+.section-title {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 1rem;
+}
+.cv-section {
+    margin-bottom: 1.5rem;
+}
+.skills-container {
+    line-height: 2;
+}
+.experience-content div, .education-content div {
+    margin-bottom: 1rem;
+    padding-left: 1rem;
+    border-left: 3px solid #007bff;
+}
+.contact-info {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+</style>
+{% endblock %}
+{% endblock %}

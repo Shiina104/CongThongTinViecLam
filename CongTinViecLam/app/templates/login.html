@@ -1,27 +1,42 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Login Form</title>
-    <link rel="stylesheet" type="text/css" href="style.css">
-</head>
-<body>
-<div class="login-container">
-    <h2>Login</h2>
-    <form action="/login" method="post">
-        <div class="container">
-            <label for="username"><b>Username</b></label>
-            <input type="text" placeholder="Enter Username" name="username" id="username" required>
+{% extends "layout/base.html" %}
 
-            <label for="password"><b>Password</b></label>
-            <input type="password" placeholder="Enter Password" name="password" id="password" required>
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Đăng Nhập</h4>
+            </div>
+            <div class="card-body">
+                {% if err_msg %}
+                <div class="alert alert-danger">{{ err_msg }}</div>
+                {% endif %}
 
-            <button type="submit">Login</button>
+                <form method="POST" action="{{ url_for('login') }}">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Tên đăng nhập</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Mật khẩu</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Đăng Nhập</button>
+                </form>
+
+                <hr>
+                
+                <div class="text-center">
+                    <p class="mb-2">Chưa có tài khoản?</p>
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('register_candidate') }}" class="btn btn-outline-primary">Đăng ký Ứng viên</a>
+                        <a href="{{ url_for('register_employer') }}" class="btn btn-outline-secondary">Đăng ký Nhà tuyển dụng</a>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="container" style="background-color:#f1f1f1">
-            <button type="button" class="cancelbtn">Cancel</button>
-            <span class="psw">Forgot <a href="#">password?</a></span>
-        </div>
-    </form>
+    </div>
 </div>
-</body>
-</html>
+{% endblock %}

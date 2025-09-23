@@ -1,10 +1,383 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% extends "layout/base.html" %}
 
-</body>
-</html>
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-file-earmark-person"></i>
+                    {% if cv %}Chỉnh sửa CV{% else %}Tạo CV mới{% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="cvForm" action="{{ url_for('manage_cv')}}">
+                    <!-- Thông tin cơ bản -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="border-bottom pb-2">Thông tin cơ bản</h5>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Tiêu đề CV *</label>
+                                <input type="text" class="form-control" id="title" name="title" 
+                                       value="{{ cv.title if cv }}" required
+                                       placeholder="Ví dụ: Senior Developer, Marketing Manager...">
+                                <div class="form-text">Tiêu đề ngắn gọn thể hiện vị trí mong muốn</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="position" class="form-label">Vị trí ứng tuyển</label>
+                                <input type="text" class="form-control" id="position" name="position"
+                                       value="{{ cv.position if cv }}"
+                                       placeholder="Ví dụ: Full-stack Developer, Sales Executive...">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thông tin cá nhân -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="border-bottom pb-2">Thông tin cá nhân</h5>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="full_name" class="form-label">Họ và tên *</label>
+                                <input type="text" class="form-control" id="full_name" name="full_name"
+                                       value="{{ current_user.candidate.full_name if current_user.candidate }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email *</label>
+                                <input type="email" class="form-control" id="email" name="email"
+                                       value="{{ current_user.candidate.email if current_user.candidate }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Số điện thoại</label>
+                                <input type="tel" class="form-control" id="phone" name="phone"
+                                       value="{{ current_user.candidate.phone if current_user.candidate }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mục tiêu nghề nghiệp -->
+                    <div class="mb-4">
+                        <label for="objective" class="form-label">Mục tiêu nghề nghiệp</label>
+                        <textarea class="form-control" id="objective" name="objective" rows="3"
+                                  placeholder="Mô tả ngắn gọn mục tiêu nghề nghiệp của bạn...">{{ cv.objective if cv }}</textarea>
+                        <div class="form-text">Tối đa 200 từ</div>
+                    </div>
+
+                    <!-- Kỹ năng -->
+                    <div class="mb-4">
+                        <label for="skills" class="form-label">Kỹ năng *</label>
+                        <textarea class="form-control" id="skills" name="skills" rows="4" required
+                                  placeholder="Mỗi kỹ năng trên một dòng. Ví dụ:&#10;Python&#10;JavaScript&#10;React&#10;MySQL">{{ cv.skills if cv }}</textarea>
+                        <div class="form-text">Mỗi kỹ năng trên một dòng riêng</div>
+                    </div>
+
+                    <!-- Kinh nghiệm làm việc -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">Kinh nghiệm làm việc</h5>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addExperience()">
+                                <i class="bi bi-plus"></i> Thêm kinh nghiệm
+                            </button>
+                        </div>
+                        
+                        <div id="experiences-container">
+                            {% if cv and cv.experience %}
+                                {% for exp in cv.experience.split('|||') %}
+                                <div class="experience-item card mb-3">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control mb-2" name="company[]" 
+                                                       value="{{ exp.split('|')[0] }}" placeholder="Tên công ty">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control mb-2" name="position[]" 
+                                                       value="{{ exp.split('|')[1] }}" placeholder="Vị trí công việc">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control mb-2" name="period[]" 
+                                                       value="{{ exp.split('|')[2] }}" placeholder="Thời gian (2020-2022)">
+                                            </div>
+                                            <div class="col-md-12">
+                                                <textarea class="form-control" name="description[]" rows="2" 
+                                                          placeholder="Mô tả công việc, thành tích...">{{ exp.split('|')[3] if exp.split('|')[3] }}</textarea>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-danger mt-2" onclick="removeExperience(this)">Xóa</button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="experience-item card mb-3">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control mb-2" name="company[]" placeholder="Tên công ty">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control mb-2" name="position[]" placeholder="Vị trí công việc">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control mb-2" name="period[]" placeholder="Thời gian (2020-2022)">
+                                            </div>
+                                            <div class="col-md-12">
+                                                <textarea class="form-control" name="description[]" rows="2" placeholder="Mô tả công việc, thành tích..."></textarea>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-danger mt-2" onclick="removeExperience(this)">Xóa</button>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Học vấn -->
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">Học vấn</h5>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addEducation()">
+                                <i class="bi bi-plus"></i> Thêm học vấn
+                            </button>
+                        </div>
+                        
+                        <div id="education-container">
+                            {% if cv and cv.education %}
+                                {% for edu in cv.education.split('|||') %}
+                                <div class="education-item card mb-3">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control mb-2" name="school[]" 
+                                                       value="{{ edu.split('|')[0] }}" placeholder="Tên trường">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control mb-2" name="degree[]" 
+                                                       value="{{ edu.split('|')[1] }}" placeholder="Bằng cấp">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control mb-2" name="edu_period[]" 
+                                                       value="{{ edu.split('|')[2] }}" placeholder="Thời gian (2016-2020)">
+                                            </div>
+                                            <div class="col-md-12">
+                                                <textarea class="form-control" name="edu_description[]" rows="2" 
+                                                          placeholder="Mô tả thêm...">{{ edu.split('|')[3] if edu.split('|')[3] }}</textarea>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-danger mt-2" onclick="removeEducation(this)">Xóa</button>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="education-item card mb-3">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control mb-2" name="school[]" placeholder="Tên trường">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control mb-2" name="degree[]" placeholder="Bằng cấp">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <input type="text" class="form-control mb-2" name="edu_period[]" placeholder="Thời gian (2016-2020)">
+                                            </div>
+                                            <div class="col-md-12">
+                                                <textarea class="form-control" name="edu_description[]" rows="2" placeholder="Mô tả thêm..."></textarea>
+                                            </div>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-danger mt-2" onclick="removeEducation(this)">Xóa</button>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+
+                    <!-- Nút submit -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('candidate_dashboard') }}" class="btn btn-secondary me-md-2">Hủy bỏ</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i>
+                            {% if cv %}Cập nhật CV{% else %}Tạo CV{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Preview CV -->
+        <div class="card shadow mt-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Xem trước CV</h5>
+            </div>
+            <div class="card-body">
+                <div id="cv-preview" class="bg-white p-4 border rounded">
+                    <p class="text-muted">CV preview sẽ hiển thị ở đây...</p>
+                </div>
+                <div class="mt-3 text-center">
+                    <button class="btn btn-outline-primary" onclick="updatePreview()">
+                        <i class="bi bi-arrow-clockwise"></i> Cập nhật preview
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+// Thêm kinh nghiệm làm việc
+function addExperience() {
+    const container = document.getElementById('experiences-container');
+    const newItem = document.createElement('div');
+    newItem.className = 'experience-item card mb-3';
+    newItem.innerHTML = `
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <input type="text" class="form-control mb-2" name="company[]" placeholder="Tên công ty">
+                </div>
+                <div class="col-md-6">
+                    <input type="text" class="form-control mb-2" name="position[]" placeholder="Vị trí công việc">
+                </div>
+                <div class="col-md-6">
+                    <input type="text" class="form-control mb-2" name="period[]" placeholder="Thời gian (2020-2022)">
+                </div>
+                <div class="col-md-12">
+                    <textarea class="form-control" name="description[]" rows="2" placeholder="Mô tả công việc, thành tích..."></textarea>
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-danger mt-2" onclick="removeExperience(this)">Xóa</button>
+        </div>
+    `;
+    container.appendChild(newItem);
+}
+
+// Xóa kinh nghiệm
+function removeExperience(button) {
+    if (document.querySelectorAll('.experience-item').length > 1) {
+        button.closest('.experience-item').remove();
+    } else {
+        alert('Cần ít nhất một mục kinh nghiệm');
+    }
+}
+
+// Thêm học vấn
+function addEducation() {
+    const container = document.getElementById('education-container');
+    const newItem = document.createElement('div');
+    newItem.className = 'education-item card mb-3';
+    newItem.innerHTML = `
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <input type="text" class="form-control mb-2" name="school[]" placeholder="Tên trường">
+                </div>
+                <div class="col-md-6">
+                    <input type="text" class="form-control mb-2" name="degree[]" placeholder="Bằng cấp">
+                </div>
+                <div class="col-md-6">
+                    <input type="text" class="form-control mb-2" name="edu_period[]" placeholder="Thời gian (2016-2020)">
+                </div>
+                <div class="col-md-12">
+                    <textarea class="form-control" name="edu_description[]" rows="2" placeholder="Mô tả thêm..."></textarea>
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-danger mt-2" onclick="removeEducation(this)">Xóa</button>
+        </div>
+    `;
+    container.appendChild(newItem);
+}
+
+// Xóa học vấn
+function removeEducation(button) {
+    if (document.querySelectorAll('.education-item').length > 1) {
+        button.closest('.education-item').remove();
+    } else {
+        alert('Cần ít nhất một mục học vấn');
+    }
+}
+
+// Cập nhật preview CV
+function updatePreview() {
+    const title = document.getElementById('title').value || 'Tiêu đề CV';
+    const fullName = document.getElementById('full_name').value || 'Họ và tên';
+    const email = document.getElementById('email').value || 'email@example.com';
+    const phone = document.getElementById('phone').value || 'Số điện thoại';
+    const objective = document.getElementById('objective').value || 'Mục tiêu nghề nghiệp...';
+    const skills = document.getElementById('skills').value || 'Kỹ năng...';
+
+    const preview = document.getElementById('cv-preview');
+    preview.innerHTML = `
+        <div class="cv-preview-content">
+            <div class="text-center mb-4">
+                <h2 class="text-primary">${fullName}</h2>
+                <h4 class="text-secondary">${title}</h4>
+                <p>${email} | ${phone}</p>
+            </div>
+            
+            ${objective ? `<div class="mb-3"><strong>Mục tiêu nghề nghiệp:</strong><p>${objective}</p></div>` : ''}
+            
+            ${skills ? `<div class="mb-3"><strong>Kỹ năng:</strong><p>${skills.replace(/\n/g, '<br>')}</p></div>` : ''}
+            
+            <div class="mb-3">
+                <strong>Kinh nghiệm làm việc:</strong>
+                <p>Thông tin kinh nghiệm sẽ hiển thị ở đây...</p>
+            </div>
+            
+            <div class="mb-3">
+                <strong>Học vấn:</strong>
+                <p>Thông tin học vấn sẽ hiển thị ở đây...</p>
+            </div>
+        </div>
+    `;
+}
+
+// Auto-save draft
+let autoSaveTimer;
+function autoSave() {
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => {
+        const formData = new FormData(document.getElementById('cvForm'));
+        // Gửi request auto-save (có thể implement sau)
+        console.log('Auto-saving...', Object.fromEntries(formData));
+    }, 2000);
+}
+
+// Gắn sự kiện auto-save
+document.querySelectorAll('#cvForm input, #cvForm textarea').forEach(element => {
+    element.addEventListener('input', autoSave);
+});
+
+// Khởi tạo preview khi trang load
+document.addEventListener('DOMContentLoaded', updatePreview);
+</script>
+
+<style>
+.cv-preview-content {
+    font-family: 'Times New Roman', Times, serif;
+    line-height: 1.6;
+}
+.cv-preview-content h2 {
+    font-size: 24px;
+    margin-bottom: 5px;
+}
+.cv-preview-content h4 {
+    font-size: 18px;
+    color: #666;
+    margin-bottom: 10px;
+}
+.experience-item, .education-item {
+    border-left: 4px solid #007bff;
+}
+</style>
+{% endblock %}
+{% endblock %}

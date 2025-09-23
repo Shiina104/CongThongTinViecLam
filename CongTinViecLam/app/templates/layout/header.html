@@ -1,0 +1,27 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">Job Portal</a>
+            <div class="navbar-nav">
+                <a class="nav-link" href="{{ url_for('jobs') }}">Công việc</a>
+                {% if current_user.role == UserRole.CANDIDATE %}
+                    <a class="nav-link" href="{{ url_for('candidate_dashboard') }}">Dashboard</a>
+                    <a class="nav-link" href="{{ url_for('manage_cv') }}">Tạo CV nhanh</a>
+                {% elif current_user.role == UserRole.EMPLOYER %}
+                    <a class="nav-link" href="{{ url_for('employer_dashboard') }}">Dashboard</a>
+                    <a class="nav-link" href="{{ url_for('create_job') }}">Đăng tin tuyển dụng</a>
+                {% endif %}
+            </div>
+            <div class="navbar-nav ms-auto">
+                {% if current_user.is_authenticated %}
+                    <a class="nav-link" href="{{ url_for('profile') }}">
+                        <span class="navbar-text me-3">Xin chào, {{ current_user.username }}</span>
+                    </a>
+                    <a class="nav-link" href="{{ url_for('logout') }}">Đăng xuất</a>
+                {% else %}
+                    <a class="nav-link" href="{{ url_for('login') }}">Đăng nhập</a>
+                    <a class="nav-link" href="{{ url_for('register_candidate') }}">Đăng ký Ứng viên</a>
+                    <a class="nav-link" href="{{ url_for('register_employer') }}">Đăng ký Nhà tuyển dụng</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
