@@ -1,0 +1,346 @@
+{% extends "layout/base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{{ url_for('employer_dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{{ url_for('employer_dashboard') }}">Tin tuyển dụng</a></li>
+                <li class="breadcrumb-item active">Chỉnh sửa tin</li>
+            </ol>
+        </nav>
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="fw-bold">Chỉnh sửa Tin Tuyển Dụng</h1>
+                <p class="text-muted">Cập nhật thông tin tin tuyển dụng</p>
+            </div>
+            <div>
+                <button type="button" class="btn btn-outline-{{ 'success' if job.status == 'inactive' else 'warning' }} me-2" 
+                        onclick="toggleJobStatus({{ job.id }})">
+                    <i class="bi bi-{{ 'play-circle' if job.status == 'inactive' else 'pause-circle' }}"></i>
+                    {{ 'Kích hoạt' if job.status == 'inactive' else 'Tạm dừng' }}
+                </button>
+                <button type="button" class="btn btn-outline-danger" onclick="confirmDelete({{ job.id }})">
+                    <i class="bi bi-trash"></i> Xóa tin
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-pencil-square"></i>
+                    Chỉnh sửa: {{ job.title }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="editJobForm">
+                    <!-- Thông tin cơ bản -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h5 class="border-bottom pb-2">Thông tin cơ bản</h5>
+                        </div>
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="title" class="form-label">Tiêu đề tin tuyển dụng *</label>
+                                <input type="text" class="form-control" id="title" name="title" 
+                                       value="{{ job.title }}" required
+                                       placeholder="Ví dụ: Tuyển dụng Lập trình viên Python">
+                                <div class="form-text">Tiêu đề hấp dẫn sẽ thu hút nhiều ứng viên hơn</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="location" class="form-label">Địa điểm làm việc</label>
+                                <input type="text" class="form-control" id="location" name="location"
+                                       value="{{ job.location or '' }}"
+                                       placeholder="Ví dụ: Hà Nội, TP.HCM, Đà Nẵng...">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="salary" class="form-label">Mức lương</label>
+                                <input type="text" class="form-control" id="salary" name="salary"
+                                       value="{{ "{:,.0f}".format(job.salary) if job.salary else '' }}"
+                                       placeholder="Ví dụ: 15000000 hoặc Thương lượng">
+                                <div class="form-text">Nhập số (ví dụ: 15000000) hoặc "Thương lượng"</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Loại công việc -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="work_type" class="form-label">Hình thức làm việc</label>
+                                <select class="form-select" id="work_type" name="work_type">
+                                    <option value="">Chọn hình thức</option>
+                                    <option value="fulltime" {{ 'selected' if job.work_type == 'fulltime' }}>Toàn thời gian</option>
+                                    <option value="parttime" {{ 'selected' if job.work_type == 'parttime' }}>Bán thời gian</option>
+                                    <option value="remote" {{ 'selected' if job.work_type == 'remote' }}>Làm việc từ xa</option>
+                                    <option value="hybrid" {{ 'selected' if job.work_type == 'hybrid' }}>Kết hợp</option>
+                                    <option value="contract" {{ 'selected' if job.work_type == 'contract' }}>Hợp đồng</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="experience_level" class="form-label">Yêu cầu kinh nghiệm</label>
+                                <select class="form-select" id="experience_level" name="experience_level">
+                                    <option value="">Chọn kinh nghiệm</option>
+                                    <option value="intern" {{ 'selected' if job.experience_level == 'intern' }}>Thực tập sinh</option>
+                                    <option value="fresher" {{ 'selected' if job.experience_level == 'fresher' }}>Mới tốt nghiệp</option>
+                                    <option value="junior" {{ 'selected' if job.experience_level == 'junior' }}>Dưới 1 năm</option>
+                                    <option value="mid" {{ 'selected' if job.experience_level == 'mid' }}>1-3 năm</option>
+                                    <option value="senior" {{ 'selected' if job.experience_level == 'senior' }}>Trên 3 năm</option>
+                                    <option value="manager" {{ 'selected' if job.experience_level == 'manager' }}>Quản lý</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trạng thái -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">Trạng thái tin đăng</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="active" {{ 'selected' if job.status == 'active' }}>Đang hoạt động</option>
+                                    <option value="inactive" {{ 'selected' if job.status == 'inactive' }}>Tạm dừng</option>
+                                    <option value="draft" {{ 'selected' if job.status == 'draft' }}>Bản nháp</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Thông tin khác</label>
+                                <div class="form-text">
+                                    <small>
+                                        <i class="bi bi-calendar"></i> Đăng ngày: {{ job.posted_date.strftime('%d/%m/%Y') }}<br>
+                                        <i class="bi bi-people"></i> Ứng viên: {{ job.applications|length }}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mô tả công việc -->
+                    <div class="mb-4">
+                        <label for="description" class="form-label">Mô tả công việc *</label>
+                        <textarea class="form-control" id="description" name="description" rows="6" required
+                                  placeholder="Mô tả chi tiết về công việc, trách nhiệm, nhiệm vụ...">{{ job.description }}</textarea>
+                        <div class="form-text">Mô tả rõ ràng sẽ giúp ứng viên hiểu về công việc</div>
+                    </div>
+
+                    <!-- Yêu cầu công việc -->
+                    <div class="mb-4">
+                        <label for="requirements" class="form-label">Yêu cầu công việc</label>
+                        <textarea class="form-control" id="requirements" name="requirements" rows="6"
+                                  placeholder="Yêu cầu về kỹ năng, kinh nghiệm, bằng cấp...">{{ job.requirements or '' }}</textarea>
+                        <div class="form-text">Mỗi yêu cầu nên viết trên một dòng riêng</div>
+                    </div>
+
+                    <!-- Quyền lợi -->
+                    <div class="mb-4">
+                        <label for="benefits" class="form-label">Quyền lợi</label>
+                        <textarea class="form-control" id="benefits" name="benefits" rows="4"
+                                  placeholder="Quyền lợi khi làm việc tại công ty...">{{ job.benefits or '' }}</textarea>
+                    </div>
+
+                    <!-- Nút submit -->
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end border-top pt-3">
+                        <a href="{{ url_for('employer_dashboard') }}" class="btn btn-secondary me-md-2">Hủy bỏ</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg"></i>
+                            Cập nhật tin tuyển dụng
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Thống kê ứng viên -->
+        {% if job.applications %}
+        <div class="card shadow mt-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Thống kê ứng viên</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h4 class="text-primary">{{ job.applications|length }}</h4>
+                            <small>Tổng ứng viên</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h4 class="text-warning">{{ job.applications|selectattr('status', 'equalto', 'pending')|list|length }}</h4>
+                            <small>Chờ xem xét</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h4 class="text-info">{{ job.applications|selectattr('status', 'equalto', 'reviewed')|list|length }}</h4>
+                            <small>Đã xem</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h4 class="text-success">{{ job.applications|selectattr('status', 'equalto', 'accepted')|list|length }}</h4>
+                            <small>Chấp nhận</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('job_candidates', job_id=job.id) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-people"></i> Xem danh sách ứng viên
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal xác nhận xóa -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Xác nhận xóa tin tuyển dụng</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc muốn xóa tin tuyển dụng "<strong>{{ job.title }}</strong>"?</p>
+                <p class="text-danger">Hành động này sẽ xóa tất cả ứng viên đã ứng tuyển và không thể hoàn tác.</p>
+                <p><strong>Số ứng viên sẽ bị xóa: {{ job.applications|length }}</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <form id="deleteForm" method="POST" action="{{ url_for('delete_job', job_id=job.id) }}">
+                    <button type="submit" class="btn btn-danger">Xác nhận xóa</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Xác nhận xóa job
+function confirmDelete(jobId) {
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+// Toggle job status
+function toggleJobStatus(jobId) {
+    if (!confirm('Bạn có chắc muốn thay đổi trạng thái tin tuyển dụng?')) {
+        return;
+    }
+
+    fetch(`/employer/job/${jobId}/toggle_status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Có lỗi xảy ra: ' + data.error);
+        }
+    })
+    .catch(error => {
+        alert('Lỗi kết nối: ' + error.message);
+    });
+}
+
+// Format salary input
+document.getElementById('salary').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value) {
+        value = parseInt(value).toLocaleString('vi-VN');
+    }
+    e.target.value = value;
+});
+
+// Character counter
+function setupCharacterCounter(textareaId, maxLength) {
+    const textarea = document.getElementById(textareaId);
+    const counter = document.createElement('div');
+    counter.className = 'form-text text-end';
+    textarea.parentNode.appendChild(counter);
+    
+    textarea.addEventListener('input', function() {
+        const count = this.value.length;
+        counter.textContent = `${count}/${maxLength} ký tự`;
+        if (count > maxLength) {
+            counter.classList.add('text-danger');
+        } else {
+            counter.classList.remove('text-danger');
+        }
+    });
+    
+    // Initialize counter
+    const count = textarea.value.length;
+    counter.textContent = `${count}/${maxLength} ký tự`;
+}
+
+// Áp dụng cho các textarea
+setupCharacterCounter('description', 2000);
+setupCharacterCounter('requirements', 1000);
+setupCharacterCounter('benefits', 500);
+
+// Form validation
+document.getElementById('editJobForm').addEventListener('submit', function(e) {
+    const title = document.getElementById('title').value.trim();
+    const description = document.getElementById('description').value.trim();
+    
+    if (!title || !description) {
+        e.preventDefault();
+        alert('Vui lòng điền đầy đủ tiêu đề và mô tả công việc');
+        return false;
+    }
+    
+    if (title.length < 10) {
+        e.preventDefault();
+        alert('Tiêu đề quá ngắn. Vui lòng nhập ít nhất 10 ký tự');
+        return false;
+    }
+    
+    if (description.length < 50) {
+        e.preventDefault();
+        alert('Mô tả công việc quá ngắn. Vui lòng nhập ít nhất 50 ký tự');
+        return false;
+    }
+});
+</script>
+
+<style>
+.section-title {
+    font-weight: 600;
+    color: #495057;
+    border-left: 4px solid #007bff;
+    padding-left: 10px;
+    margin-bottom: 1rem;
+}
+.form-text {
+    font-size: 0.875rem;
+}
+.border-bottom {
+    border-color: #dee2e6 !important;
+}
+</style>
+{% endblock %}

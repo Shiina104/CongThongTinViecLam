@@ -101,13 +101,13 @@
                         </td>
                         <td>
                             <span class="badge bg-{{ 
-                                'success' if job.status == 'active' 
-                                else 'warning' if job.status == 'pending' 
+                                'success' if job.status == JobStatus.active
+                                else 'warning' if job.status == JobStatus.pending
                                 else 'secondary' 
                             }}">
                                 {{ 
-                                    'Đang tuyển' if job.status == 'active' 
-                                    else 'Chờ duyệt' if job.status == 'pending' 
+                                    'Đang tuyển' if job.status == JobStatus.active
+                                    else 'Chờ duyệt' if job.status == JobStatus.pending
                                     else 'Đã đóng' 
                                 }}
                             </span>

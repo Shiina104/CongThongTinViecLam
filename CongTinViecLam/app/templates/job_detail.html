@@ -14,10 +14,17 @@
                         {% if job.salary %}
                         <p><strong>Mức lương:</strong> {{ "{:,.0f}".format(job.salary) }} VND</p>
                         {% endif %}
+                        {% if job.work_type %}
+                        <p><strong>Hình thức làm việc:</strong> {{ job.work_type|capitalize }}</p>
+                        {% endif %}
                     </div>
                     <div class="col-md-6">
                         <p><strong>Ngày đăng:</strong> {{ job.posted_date.strftime('%d/%m/%Y') }}</p>
-                        <p><strong>Trạng thái:</strong> 
+                        <p><strong>Cập nhật:</strong> {{ job.updated_at.strftime('%d/%m/%Y') }}</p>
+                        {% if job.experience_level %}
+                        <p><strong>Kinh nghiệm:</strong> {{ job.experience_level|capitalize }}</p>
+                        {% endif %}
+                        <p><strong>Trạng thái:</strong>
                             <span class="badge bg-{{ 'success' if job.status == JobStatus.active else 'secondary' }}">
                                 {{ 'Đang tuyển' if job.status == JobStatus.active else 'Đã đóng' }}
                             </span>
@@ -36,6 +43,13 @@
                 <h5>Yêu cầu công việc</h5>
                 <div class="mb-4">
                     {{ job.requirements|replace('\n', '<br>')|safe }}
+                </div>
+                {% endif %}
+
+                {% if job.benefits %}
+                <h5>Quyền lợi</h5>
+                <div class="mb-4">
+                    {{ job.benefits|replace('\n', '<br>')|safe }}
                 </div>
                 {% endif %}
             </div>
@@ -109,19 +123,18 @@
 {% block scripts %}
 <script>
 function showApplyModal() {
-    // Load candidate's CVs
     fetch('/api/candidate/cvs')
         .then(response => response.json())
         .then(cvs => {
             const select = document.getElementById('cvSelect');
             select.innerHTML = '<option value="">-- Chọn CV --</option>' +
                 cvs.map(cv => `<option value="${cv.id}">${cv.title}</option>`).join('');
-            
+
             if (cvs.length === 0) {
                 select.innerHTML = '<option value="">Bạn chưa có CV nào. Vui lòng tạo CV trước.</option>';
                 select.disabled = true;
             }
-            
+
             new bootstrap.Modal(document.getElementById('applyModal')).show();
         });
 }

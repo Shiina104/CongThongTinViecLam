@@ -96,12 +96,20 @@ class Job(db.Model):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     employer_id = db.Column(db.Integer, db.ForeignKey('employers.id'), nullable=False)
+
     title = db.Column(db.String(255), nullable=False)
     description = db.Column(db.Text, nullable=False)
     requirements = db.Column(db.Text)
     location = db.Column(db.String(255))
     salary = db.Column(db.Numeric(10, 2))
+
+    work_type = db.Column(db.String(50))  # fulltime, parttime, remote, hybrid, contract
+    experience_level = db.Column(db.String(50))  # intern, fresher, junior, mid, senior, manager
+    benefits = db.Column(db.Text)
+
     posted_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
     status = db.Column(db.Enum(JobStatus), default='pending')
 
     applications = db.relationship('Application', backref='job', lazy=True)

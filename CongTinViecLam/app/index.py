@@ -393,6 +393,7 @@ def employer_dashboard():
                            total_applications=total_applications)
 
 
+# ROUTE ĐĂNG JOB
 @app.route('/employer/job', methods=['GET', 'POST'])
 @login_required
 def create_job():
@@ -406,6 +407,9 @@ def create_job():
         requirements = request.form.get('requirements')
         location = request.form.get('location')
         salary = request.form.get('salary')
+        work_type = request.form.get('work_type')
+        experience_level = request.form.get('experience_level')
+        benefits = request.form.get('benefits')
 
         job = Job(
             employer_id=current_user.employer.id,
@@ -414,6 +418,9 @@ def create_job():
             requirements=requirements,
             location=location,
             salary=salary,
+            work_type=work_type,
+            experience_level=experience_level,
+            benefits=benefits,
             status='pending'
         )
 
@@ -426,22 +433,103 @@ def create_job():
     return render_template('create_job.html')
 
 
-@app.route('/employer/job/<int:job_id>/candidate')
+# ROUTE EDIT JOB
+@app.route('/employer/job/<int:job_id>/edit', methods=['GET', 'POST'])
 @login_required
-def job_candidates(job_id):
+def edit_job(job_id):
     if current_user.role != UserRole.EMPLOYER:
         flash('Bạn không có quyền truy cập trang này', 'danger')
         return redirect(url_for('index'))
 
+    # Kiểm tra job thuộc về employer hiện tại
     job = Job.query.filter_by(id=job_id, employer_id=current_user.employer.id).first_or_404()
 
-    applications = Application.query.filter_by(job_id=job_id) \
-        .order_by(Application.applied_date.desc()) \
-        .all()
+    if request.method == 'POST':
+        try:
+            # Lấy dữ liệu từ form
+            title = request.form.get('title')
+            description = request.form.get('description')
+            requirements = request.form.get('requirements')
+            location = request.form.get('location')
+            salary = request.form.get('salary')
+            work_type = request.form.get('work_type')
+            experience_level = request.form.get('experience_level')
+            benefits=request.form.get('benefits')
+            status = request.form.get('status')
 
-    return render_template('job_candidates.html',
-                           job=job,
-                           applications=applications)
+            # Validate dữ liệu
+            if not title or not description:
+                flash('Tiêu đề và mô tả không được để trống', 'danger')
+                return render_template('edit_job.html', job=job)
+
+            # Cập nhật thông tin job
+            job.title = title
+            job.description = description
+            job.requirements = requirements
+            job.location = location
+            job.work_type = work_type
+            job.experience_level = experience_level
+            job.benefits = benefits
+            job.status = status
+
+            # Xử lý salary
+            if salary and salary.strip():
+                try:
+                    # Remove dots and commas, convert to float
+                    salary_clean = salary.replace('.', '').replace(',', '')
+                    if salary_clean.isdigit():
+                        job.salary = float(salary_clean)
+                    else:
+                        job.salary = None
+                except ValueError:
+                    job.salary = None
+            else:
+                job.salary = None
+
+            job.updated_at = datetime.datetime.utcnow()
+
+            db.session.commit()
+
+            flash('Cập nhật tin tuyển dụng thành công!', 'success')
+            return redirect(url_for('employer_dashboard'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash('Có lỗi xảy ra khi cập nhật tin tuyển dụng', 'danger')
+            print(f"Error updating job: {e}")
+
+    return render_template('edit_job.html', job=job)
+
+
+# ROUTE ĐỔI STATUS JOB
+@app.route('/employer/job/<int:job_id>/toggle_status', methods=['POST'])
+@login_required
+def toggle_job_status(job_id):
+    if current_user.role != UserRole.EMPLOYER:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    job = Job.query.filter_by(id=job_id, employer_id=current_user.employer.id).first_or_404()
+
+    try:
+        # Toggle status between active and inactive
+        if job.status == 'active':
+            job.status = 'inactive'
+            message = 'Đã tắt tin tuyển dụng'
+        else:
+            job.status = 'active'
+            message = 'Đã kích hoạt tin tuyển dụng'
+
+        job.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "message": message,
+            "new_status": job.status
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"error": "Có lỗi xảy ra"}), 500
 
 
 # ROUTE XÓA JOB
@@ -465,6 +553,25 @@ def delete_job(job_id):
         flash('Có lỗi xảy ra khi xóa tin tuyển dụng', 'danger')
 
     return redirect(url_for('employer_dashboard'))
+
+
+# ROUTE XEM APPLY
+@app.route('/employer/job/<int:job_id>/candidate')
+@login_required
+def job_candidates(job_id):
+    if current_user.role != UserRole.EMPLOYER:
+        flash('Bạn không có quyền truy cập trang này', 'danger')
+        return redirect(url_for('index'))
+
+    job = Job.query.filter_by(id=job_id, employer_id=current_user.employer.id).first_or_404()
+
+    applications = Application.query.filter_by(job_id=job_id) \
+        .order_by(Application.applied_date.desc()) \
+        .all()
+
+    return render_template('job_candidates.html',
+                           job=job,
+                           applications=applications)
 
 
 # NHÀ TUYỂN DỤNG DUYỆT HỒ SƠ
